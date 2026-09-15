@@ -18,7 +18,6 @@
  */
 import { site, enabledCategories } from '../../config';
 
-// Belt and braces alongside public/_headers.
 Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
 Astro.response.headers.set('Cache-Control', 'private, no-store');
 ---
@@ -29,215 +28,486 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Inventory admin — {site.identity.name}</title>
+    <title>Inventory — {site.identity.name}</title>
     <link rel="icon" href={site.brand.logos.favicon} />
-    <style define:vars={{
+    <style is:global define:vars={{
       primary: site.brand.colors.primary,
       deep: site.brand.colors.deep,
       night: site.brand.colors.night,
-      accent: site.brand.colors.accent,
       urgent: site.brand.colors.urgent,
       ink: site.brand.colors.ink,
       inkMuted: site.brand.colors.inkMuted,
-      surfaceAlt: site.brand.colors.surfaceAlt,
     }}>
       :root { color-scheme: light; }
       * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { height: 100%; }
       body {
-        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-        background: var(--surfaceAlt);
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        background: #f4f5f7;
         color: var(--ink);
-        line-height: 1.5;
+        line-height: 1.4;
       }
-      header {
-        background: linear-gradient(180deg, var(--primary), var(--deep));
-        color: #fff; padding: 18px 20px;
-        display: flex; align-items: center; justify-content: space-between; gap: 16px;
-      }
-      header h1 { font-size: 1.05rem; font-weight: 700; }
-      header .who { font-size: .78rem; opacity: .8; }
-      main { max-width: 1100px; margin: 0 auto; padding: 24px 20px 80px; }
-      .card {
-        background: #fff; border: 1px solid #e3e8f0; border-radius: 14px;
-        padding: 20px; margin-bottom: 20px;
-      }
-      h2 { font-size: 1rem; margin-bottom: 12px; color: var(--deep); }
-      label { display: block; font-size: .72rem; font-weight: 600; text-transform: uppercase;
-              letter-spacing: .08em; color: var(--inkMuted); margin: 12px 0 4px; }
-      input, select, textarea {
-        width: 100%; padding: 10px 12px; font: inherit; font-size: 16px;
-        border: 1px solid #d6dceb; border-radius: 9px; background: #fff; color: var(--ink);
-      }
-      textarea { resize: vertical; min-height: 64px; }
-      button {
-        font: inherit; font-weight: 700; cursor: pointer; border: none;
-        border-radius: 9px; padding: 11px 18px; min-height: 44px;
-      }
-      .primary { background: var(--accent); color: var(--night); }
-      .ghost { background: #fff; color: var(--deep); border: 1px solid #d6dceb; }
-      .danger { background: #fff; color: var(--urgent); border: 1px solid #f0c9c7; }
-      .row { display: grid; gap: 12px; grid-template-columns: 1fr; }
-      @media (min-width: 700px) { .row.two { grid-template-columns: 1fr 1fr; } .row.three { grid-template-columns: 1fr 1fr 1fr; } }
-      table { width: 100%; border-collapse: collapse; font-size: .88rem; }
-      th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #eef1f7; vertical-align: middle; }
-      th { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--inkMuted); }
-      .pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: .7rem; font-weight: 700; }
-      .pill.available { background: #e6f6ed; color: #12603a; }
-      .pill.draft { background: #eef1f7; color: #52607d; }
-      .pill.sold, .pill.pending { background: #232a3a; color: #fff; }
-      .pill.hidden { background: #fdf0e6; color: #8a5a1a; }
-      .orphan { background: #fdecea; color: #a3231b; border: 1px solid #f3c7c3;
-                padding: 8px 12px; border-radius: 9px; font-size: .8rem; margin-bottom: 12px; }
-      .msg { padding: 11px 14px; border-radius: 9px; font-size: .86rem; margin-bottom: 14px; }
-      .msg.err { background: #fdecea; color: #a3231b; }
-      .msg.ok { background: #e6f6ed; color: #12603a; }
-      .hint { font-size: .78rem; color: var(--inkMuted); margin-top: 6px; }
+      button, input, select, textarea { font: inherit; }
+      button { cursor: pointer; }
       .hidden { display: none !important; }
-      .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-      .login-wrap { max-width: 380px; margin: 60px auto; }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        height: 56px;
+        padding: 0 20px;
+        background: #fff;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .topbar strong { font-size: .95rem; color: var(--night); }
+      .topbar span { color: var(--inkMuted); font-size: .8rem; }
+      .linkish {
+        background: none;
+        border: 0;
+        color: var(--inkMuted);
+        font-size: .8rem;
+        padding: 6px 0;
+      }
+      .linkish:hover { color: var(--night); }
+
+      .login-screen {
+        min-height: calc(100vh - 56px);
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      .login-card {
+        width: min(100%, 360px);
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 28px 24px;
+      }
+      .login-card h1 { font-size: 1.2rem; color: var(--night); margin-bottom: 6px; }
+      .login-card p { font-size: .85rem; color: var(--inkMuted); margin-bottom: 18px; }
+
+      label { display: block; font-size: .78rem; font-weight: 600; color: #3f4b5f; margin: 0 0 6px; }
+      input, select, textarea {
+        width: 100%;
+        padding: 9px 11px;
+        border: 1px solid #d5dae3;
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+      }
+      input:focus, select:focus, textarea:focus {
+        outline: 2px solid color-mix(in srgb, var(--primary) 35%, #93c5fd);
+        outline-offset: 1px;
+      }
+      textarea { resize: vertical; min-height: 72px; }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 40px;
+        padding: 8px 14px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        font-weight: 600;
+        font-size: .88rem;
+      }
+      .btn-primary { background: var(--night); color: #fff; }
+      .btn-ghost { background: #fff; color: var(--deep); border-color: #d5dae3; }
+      .btn-danger { background: #fff; color: var(--urgent); border-color: #f0c9c7; }
+      .btn-wide { width: 100%; }
+      .btn-sm { min-height: 32px; padding: 4px 10px; font-size: .78rem; }
+
+      .workspace {
+        height: calc(100vh - 56px);
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+      }
+      .list-pane, .edit-pane {
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+      }
+      .list-pane { border-right: 1px solid #e5e7eb; overflow: hidden; }
+      .pane-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 14px 16px 10px;
+      }
+      .pane-head h2 { font-size: .95rem; color: var(--night); }
+      .count { font-size: .75rem; color: var(--inkMuted); font-weight: 500; }
+      .search-wrap { padding: 0 16px 12px; }
+      #orphanNotice {
+        margin: 0 16px 10px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: #fef4f3;
+        color: #9a2b24;
+        font-size: .78rem;
+      }
+      #units {
+        overflow: auto;
+        flex: 1;
+        min-width: 0;
+        padding: 0 8px 16px;
+      }
+      .unit {
+        width: 100%;
+        min-width: 0;
+        display: grid;
+        grid-template-columns: 48px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        text-align: left;
+        padding: 8px;
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        color: inherit;
+      }
+      .unit:hover { background: #f4f6f8; }
+      .unit.is-on { background: #eef3fb; }
+      .unit-photo {
+        width: 48px;
+        height: 36px;
+        min-width: 48px;
+        max-width: 48px;
+        border-radius: 6px;
+        overflow: hidden;
+        background: #eef1f5 center / cover no-repeat;
+        border: 1px solid #e5e7eb;
+      }
+      .unit-copy { min-width: 0; }
+      .unit-name { font-weight: 600; font-size: .86rem; color: var(--night); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .unit-meta { font-size: .72rem; color: var(--inkMuted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .unit-price { font-size: .8rem; font-weight: 600; color: var(--night); white-space: nowrap; }
+      .empty-list { padding: 28px 16px; color: var(--inkMuted); font-size: .86rem; }
+
+      .edit-pane { background: #f4f5f7; }
+      .edit-empty {
+        flex: 1;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: 32px;
+        color: var(--inkMuted);
+      }
+      .edit-empty strong { display: block; color: var(--night); font-size: 1rem; margin-bottom: 6px; }
+      .editor { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+      .editor-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 20px 0;
+      }
+      .editor-head h2 { font-size: 1.05rem; color: var(--night); }
+      .tabs {
+        display: flex;
+        gap: 4px;
+        padding: 12px 20px 0;
+        border-bottom: 1px solid #e5e7eb;
+        background: #fff;
+      }
+      .tab {
+        background: none;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        padding: 8px 10px;
+        color: var(--inkMuted);
+        font-weight: 600;
+        font-size: .82rem;
+      }
+      .tab.is-on { color: var(--night); border-bottom-color: var(--night); }
+      .editor-body {
+        flex: 1;
+        overflow: auto;
+        padding: 18px 20px 20px;
+        background: #fff;
+      }
+      .pane { display: none; }
+      .pane.is-on { display: block; }
+      .grid { display: grid; gap: 12px; }
+      .two { grid-template-columns: 1fr; }
+      .three { grid-template-columns: 1fr; }
+      @media (min-width: 700px) {
+        .two { grid-template-columns: 1fr 1fr; }
+        .three { grid-template-columns: 1fr 1fr 1fr; }
+      }
+      .editor-foot {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px 20px;
+        background: #fff;
+        border-top: 1px solid #e5e7eb;
+      }
+      .hint { font-size: .75rem; color: var(--inkMuted); margin-top: 6px; }
+      .msg { padding: 9px 12px; border-radius: 8px; font-size: .82rem; margin: 0 20px 0; }
+      .msg.err { background: #fef4f3; color: #9a2b24; }
+      .msg.ok { background: #eef8f1; color: #17643d; }
+      .check-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f8fafc;
+      }
+      .check-row input { width: auto; margin-top: 2px; }
+      .check-row label { margin: 0; font-size: .86rem; font-weight: 500; }
+      .gallery-list { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); margin-top: 10px; }
+      .gallery-item { position: relative; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #f3f4f6; }
+      .gallery-item img { display: block; width: 100%; max-width: 100%; height: 80px; object-fit: cover; }
+      .gallery-item button { position: absolute; top: 6px; right: 6px; }
+      .back { display: none; }
+      @media (max-width: 899px) {
+        .workspace { grid-template-columns: 1fr; height: auto; min-height: calc(100vh - 56px); }
+        .list-pane { border-right: 0; min-height: calc(100vh - 56px); }
+        .edit-pane { display: none; position: fixed; inset: 56px 0 0; z-index: 5; }
+        .workspace.is-editing .list-pane { display: none; }
+        .workspace.is-editing .edit-pane { display: flex; }
+        .back { display: inline-flex; }
+      }
     </style>
   </head>
-
   <body>
-    <header>
-      <h1>Inventory admin</h1>
+    <header class="topbar">
       <div>
-        <div class="who">{site.identity.name}</div>
-        <button id="logout" class="ghost hidden" style="padding:6px 12px;min-height:0;font-size:.78rem">Sign out</button>
+        <strong>Inventory</strong>
+        <span> · {site.identity.name}</span>
       </div>
+      <button id="logout" class="linkish hidden" type="button">Sign out</button>
     </header>
 
-    <main>
-      <!-- LOGIN -->
-      <section id="login" class="login-wrap">
-        <div class="card">
-          <h2>Sign in</h2>
-          <div id="loginMsg"></div>
-          <form id="loginForm">
-            <label for="password">Password</label>
-            <input id="password" type="password" autocomplete="current-password" required />
-            <div class="actions">
-              <button class="primary" type="submit">Sign in</button>
-            </div>
-          </form>
-        </div>
-      </section>
+    <section id="login" class="login-screen">
+      <div class="login-card">
+        <h1>Sign in</h1>
+        <p>Enter the inventory password to manage units on the website.</p>
+        <div id="loginMsg"></div>
+        <form id="loginForm">
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="current-password" required />
+          <div style="height:14px"></div>
+          <button class="btn btn-primary btn-wide" type="submit">Sign in</button>
+        </form>
+      </div>
+    </section>
 
-      <!-- PANEL -->
-      <section id="panel" class="hidden">
+    <section id="panel" class="workspace hidden">
+      <aside class="list-pane">
+        <div class="pane-head">
+          <div>
+            <h2>Units</h2>
+            <div class="count" id="unitCount">Loading…</div>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="newProduct">Add</button>
+        </div>
+        <div class="search-wrap">
+          <label class="hidden" for="unitSearch">Search</label>
+          <input id="unitSearch" type="search" placeholder="Search units" />
+        </div>
+        <div id="orphanNotice" class="hidden"></div>
         <div id="globalMsg"></div>
+        <div id="units"></div>
+      </aside>
 
-        <div class="card">
-          <h2>Products</h2>
-          <div id="orphanNotice" class="orphan hidden"></div>
-          <table>
-            <thead>
-              <tr>
-                <th>Product</th><th>Category</th><th>Status</th><th>Price</th><th>Monthly</th><th>Qty</th><th></th>
-              </tr>
-            </thead>
-            <tbody id="rows"><tr><td colspan="7">Loading…</td></tr></tbody>
-          </table>
+      <section class="edit-pane">
+        <div id="editEmpty" class="edit-empty">
+          <div>
+            <strong>Select a unit</strong>
+            <p>Choose one on the left, or add a new unit to the floor.</p>
+            <div style="height:14px"></div>
+            <button type="button" class="btn btn-primary" id="emptyAdd">Add unit</button>
+          </div>
         </div>
 
-        <div class="card">
-          <h2 id="formTitle">Add a product</h2>
+        <div id="editor" class="editor hidden">
+          <div class="editor-head">
+            <div>
+              <button type="button" class="linkish back" id="closeEditor">← Units</button>
+              <h2 id="formTitle">New unit</h2>
+            </div>
+            <button type="button" class="btn btn-danger btn-sm hidden" id="deleteProduct">Delete</button>
+          </div>
+          <div class="tabs" role="tablist">
+            <button type="button" class="tab is-on" data-tab="details">Details</button>
+            <button type="button" class="tab" data-tab="photos">Photos</button>
+            <button type="button" class="tab" data-tab="listing">Listing</button>
+            <button type="button" class="tab" data-tab="copy">Copy</button>
+          </div>
           <div id="formMsg"></div>
-          <form id="productForm">
-            <div class="row two">
-              <div>
-                <label for="inventory_name">Product name</label>
-                <input id="inventory_name" required />
+          <form id="productForm" class="editor">
+            <div class="editor-body">
+              <div class="pane is-on" data-pane="details">
+                <div class="grid two">
+                  <div>
+                    <label for="inventory_name">Name</label>
+                    <input id="inventory_name" required />
+                  </div>
+                  <div>
+                    <label for="slug">URL slug</label>
+                    <input id="slug" placeholder="Blank to generate from the name" />
+                  </div>
+                  <div>
+                    <label for="category">Category</label>
+                    <select id="category" required disabled={enabledCategories.length === 0}>
+                      {enabledCategories.length === 0 ? (
+                        <option value="">No categories enabled</option>
+                      ) : (
+                        enabledCategories.map((c) => <option value={c.slug}>{c.label}</option>)
+                      )}
+                    </select>
+                  </div>
+                  <div>
+                    <label for="status">Status</label>
+                    <select id="status">
+                      <option value="draft">Draft (hidden)</option>
+                      <option value="available">Available</option>
+                      <option value="pending">Sale pending</option>
+                      <option value="sold">Sold</option>
+                      <option value="hidden">Hidden</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="price">Cash price ($)</label>
+                    <input id="price" type="number" min="0" />
+                  </div>
+                  <div>
+                    <label for="monthly_payment">Monthly ($)</label>
+                    <input id="monthly_payment" type="number" min="0" />
+                  </div>
+                  <div>
+                    <label for="quantity">Quantity</label>
+                    <input id="quantity" type="number" min="0" value="1" />
+                  </div>
+                  <div>
+                    <label for="sort_order">Sort order</label>
+                    <input id="sort_order" type="number" value="0" />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label for="slug">URL slug <span style="text-transform:none;letter-spacing:0">(blank = from name)</span></label>
-                <input id="slug" />
+
+              <div class="pane" data-pane="photos">
+                <div class="grid two">
+                  <div>
+                    <label for="imageFile">Main photo</label>
+                    <input id="imageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+                    <p class="hint" id="uploadHint">JPG, PNG, WEBP or GIF, up to 6 MB.</p>
+                    <label for="primary_image">or photo URL</label>
+                    <input id="primary_image" placeholder="https://…" />
+                  </div>
+                  <div>
+                    <label for="galleryFile">Add gallery photo</label>
+                    <input id="galleryFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+                    <p class="hint">Up to 20 extra views.</p>
+                    <label for="gallery_images">or gallery URLs</label>
+                    <textarea id="gallery_images" rows="3" placeholder="One URL per line"></textarea>
+                  </div>
+                </div>
+                <div id="galleryList" class="gallery-list"></div>
+              </div>
+
+              <div class="pane" data-pane="listing">
+                <div class="check-row">
+                  <input id="featured" type="checkbox" />
+                  <label for="featured">Featured on inventory pages</label>
+                </div>
+                <div class="grid two" style="margin-top:12px">
+                  <div>
+                    <label for="promo_label">Badge</label>
+                    <input id="promo_label" placeholder="LAST ONE" />
+                  </div>
+                  <div>
+                    <label for="delivery_promise">Delivery</label>
+                    <input id="delivery_promise" placeholder="Delivery in 2 weeks" />
+                  </div>
+                  <div>
+                    <label for="headline">Headline</label>
+                    <input id="headline" />
+                  </div>
+                  <div>
+                    <label for="positioning_label">Positioning</label>
+                    <input id="positioning_label" placeholder="Most popular" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="pane" data-pane="copy">
+                <div class="grid two">
+                  <div>
+                    <label for="quick_facts">Quick facts</label>
+                    <textarea id="quick_facts" rows="3" placeholder="One per line. First 3 show on the card."></textarea>
+                  </div>
+                  <div>
+                    <label for="why_bullets">Why this one</label>
+                    <textarea id="why_bullets" rows="3" placeholder="One per line"></textarea>
+                  </div>
+                </div>
+                <div style="margin-top:12px">
+                  <label for="hero_description">Short description</label>
+                  <textarea id="hero_description" rows="2"></textarea>
+                </div>
+                <div style="margin-top:12px">
+                  <label for="long_description">Long description</label>
+                  <textarea id="long_description" rows="4"></textarea>
+                </div>
+                <div class="grid two" style="margin-top:12px">
+                  <div>
+                    <label for="best_for">Best for</label>
+                    <input id="best_for" />
+                  </div>
+                  <div>
+                    <label for="ghl_tags">CRM tags</label>
+                    <textarea id="ghl_tags" rows="2" placeholder="One per line"></textarea>
+                  </div>
+                </div>
               </div>
             </div>
-
-            <div class="row three">
-              <div>
-                <label for="category">Category</label>
-                <select id="category" required>
-                  {enabledCategories.map((c) => <option value={c.slug}>{c.label}</option>)}
-                </select>
-                <p class="hint">Only what this site sells. Add more in client.config.ts.</p>
-              </div>
-              <div>
-                <label for="status">Status</label>
-                <select id="status">
-                  <option value="draft">Draft (hidden)</option>
-                  <option value="available">Available</option>
-                  <option value="pending">Sale pending</option>
-                  <option value="sold">Sold</option>
-                  <option value="hidden">Hidden</option>
-                </select>
-              </div>
-              <div>
-                <label for="quantity">Quantity</label>
-                <input id="quantity" type="number" min="0" value="1" />
-              </div>
-            </div>
-
-            <div class="row three">
-              <div><label for="price">Cash price ($)</label><input id="price" type="number" min="0" /></div>
-              <div><label for="monthly_payment">Monthly ($)</label><input id="monthly_payment" type="number" min="0" /></div>
-              <div><label for="sort_order">Sort order</label><input id="sort_order" type="number" value="0" /></div>
-            </div>
-
-            <label for="imageFile">Main photo</label>
-            <input id="imageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
-            <p class="hint" id="uploadHint">JPG, PNG, WEBP or GIF, up to 6 MB.</p>
-            <label for="primary_image">Photo URL</label>
-            <input id="primary_image" placeholder="/images/x.webp or https://…" />
-            <p class="hint">Must start with / or https:// — a relative path 404s on product pages.</p>
-
-            <div class="row two">
-              <div><label for="promo_label">Badge</label><input id="promo_label" placeholder="LAST ONE" /></div>
-              <div><label for="delivery_promise">Delivery promise</label><input id="delivery_promise" placeholder="Delivery in 2 weeks" /></div>
-            </div>
-
-            <label for="quick_facts">Quick facts (one per line, first 3 show on the card)</label>
-            <textarea id="quick_facts" rows="3"></textarea>
-
-            <label for="why_bullets">Why this one (one per line)</label>
-            <textarea id="why_bullets" rows="3"></textarea>
-
-            <div class="row two">
-              <div><label for="headline">Headline</label><input id="headline" /></div>
-              <div><label for="positioning_label">Positioning label</label><input id="positioning_label" placeholder="Most popular" /></div>
-            </div>
-
-            <label for="hero_description">Short description</label>
-            <textarea id="hero_description" rows="2"></textarea>
-            <label for="long_description">Long description</label>
-            <textarea id="long_description" rows="4"></textarea>
-            <div class="row two">
-              <div><label for="best_for">Best for</label><input id="best_for" /></div>
-              <div><label for="ghl_tags">CRM tags (one per line)</label><textarea id="ghl_tags" rows="2"></textarea></div>
-            </div>
-
-            <div class="actions">
-              <button class="primary" type="submit">Save product</button>
-              <button class="ghost" type="button" id="resetForm">Clear</button>
+            <div class="editor-foot">
+              <button class="btn btn-primary" type="submit">Save</button>
+              <button class="btn btn-ghost" type="button" id="resetForm">Cancel</button>
             </div>
           </form>
         </div>
       </section>
-    </main>
+    </section>
 
-    {/* is:inline — plain browser JS, left untouched by the bundler. The
-        admin panel is internal, so there is nothing to gain from bundling
-        it, and inlining keeps this page free of build-time dependencies. */}
     <script is:inline>
-      // Token lives in memory only. Not localStorage: a persisted admin
-      // token survives the tab and is readable by any script that gets on
-      // the page. Closing the tab ends the session here.
+      const TOKEN_KEY = 'inventory-admin-token';
+      const STATUS_LABELS = {
+        draft: 'Draft',
+        available: 'Available',
+        pending: 'Pending',
+        sold: 'Sold',
+        hidden: 'Hidden',
+      };
       let token = '';
+      try { token = sessionStorage.getItem(TOKEN_KEY) || ''; } catch { /* private mode */ }
       let categories = [];
+      let products = [];
+      let selectedSlug = '';
+      let query = '';
 
       const $ = (id) => document.getElementById(id);
       const show = (el, on) => el.classList.toggle('hidden', !on);
+      const lines = (v) => v.split('\n').map((s) => s.trim()).filter(Boolean);
+
+      function setToken(value) {
+        token = value;
+        try {
+          if (value) sessionStorage.setItem(TOKEN_KEY, value);
+          else sessionStorage.removeItem(TOKEN_KEY);
+        } catch { /* private mode */ }
+      }
 
       function msg(target, text, kind) {
         target.innerHTML = text ? `<div class="msg ${kind}">${text}</div>` : '';
@@ -254,121 +524,58 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
         });
         let data = {};
         try { data = await res.json(); } catch { /* non-JSON */ }
-        if (res.status === 401) { token = ''; show($('login'), true); show($('panel'), false); show($('logout'), false); }
+        if (res.status === 401) {
+          setToken('');
+          show($('login'), true);
+          show($('panel'), false);
+          show($('logout'), false);
+        }
         return { status: res.status, data };
       }
 
-      const lines = (v) => v.split('\n').map((s) => s.trim()).filter(Boolean);
-
-      /* ---------- login ---------- */
-      $('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        msg($('loginMsg'), '', '');
-        const { data } = await api('?action=login', {
-          method: 'POST',
-          body: JSON.stringify({ password: $('password').value }),
-        });
-        if (!data.ok) { msg($('loginMsg'), data.error || 'Sign in failed.', 'err'); return; }
-        token = data.token;
-        $('password').value = '';
-        show($('login'), false); show($('panel'), true); show($('logout'), true);
-        load();
-      });
-
-      $('logout').addEventListener('click', async () => {
-        await api('?action=logout', { method: 'POST' });
-        token = '';
-        show($('login'), true); show($('panel'), false); show($('logout'), false);
-      });
-
-      /* ---------- list ---------- */
-      async function load() {
-        const { data } = await api('');
-        if (!data.ok) { msg($('globalMsg'), data.error || 'Could not load products.', 'err'); return; }
-        categories = data.categories || [];
-
-        if (data.imagesConfigured === false) {
-          $('uploadHint').textContent =
-            'Image hosting is not configured yet, so uploads will be refused. Paste an https:// URL instead.';
-        }
-
-        const orphans = data.products.filter((p) => p.orphaned);
-        if (orphans.length) {
-          $('orphanNotice').textContent =
-            `${orphans.length} product${orphans.length === 1 ? ' sits' : 's sit'} in a category this site no longer sells. ` +
-            `They are invisible to customers. Delete them, or re-enable the category in client.config.ts.`;
-        }
-        show($('orphanNotice'), orphans.length > 0);
-
-        const tbody = $('rows');
-        if (!data.products.length) {
-          tbody.innerHTML = '<tr><td colspan="7">No products yet.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = '';
-        for (const p of data.products) {
-          const tr = document.createElement('tr');
-
-          const name = document.createElement('td');
-          name.textContent = p.inventory_name;
-          if (p.orphaned) {
-            const flag = document.createElement('div');
-            flag.style.cssText = 'font-size:.72rem;color:#a3231b';
-            flag.textContent = 'not sold here any more';
-            name.appendChild(flag);
-          }
-
-          const cat = document.createElement('td');
-          cat.textContent = p.category;
-
-          const status = document.createElement('td');
-          const sel = document.createElement('select');
-          for (const s of ['draft', 'available', 'pending', 'sold', 'hidden']) {
-            const o = document.createElement('option');
-            o.value = s; o.textContent = s; o.selected = p.status === s;
-            sel.appendChild(o);
-          }
-          sel.addEventListener('change', async () => {
-            const { data: r } = await api('', {
-              method: 'PATCH',
-              body: JSON.stringify({ slug: p.slug, status: sel.value }),
-            });
-            msg($('globalMsg'), r.ok ? `Updated ${p.inventory_name}.` : (r.error || 'Update failed.'), r.ok ? 'ok' : 'err');
-          });
-          status.appendChild(sel);
-
-          const price = document.createElement('td');
-          price.textContent = p.price ? `$${p.price.toLocaleString()}` : '—';
-          const monthly = document.createElement('td');
-          monthly.textContent = p.monthly_payment ? `$${p.monthly_payment}/mo` : '—';
-          const qty = document.createElement('td');
-          qty.textContent = p.quantity;
-
-          const act = document.createElement('td');
-          const edit = document.createElement('button');
-          edit.className = 'ghost'; edit.textContent = 'Edit';
-          edit.style.cssText = 'padding:6px 12px;min-height:0;font-size:.78rem;margin-right:6px';
-          edit.addEventListener('click', () => fill(p));
-          const del = document.createElement('button');
-          del.className = 'danger'; del.textContent = 'Delete';
-          del.style.cssText = 'padding:6px 12px;min-height:0;font-size:.78rem';
-          del.addEventListener('click', async () => {
-            if (!confirm(`Delete "${p.inventory_name}"? It is hidden, not erased.`)) return;
-            const { data: r } = await api(`?slug=${encodeURIComponent(p.slug)}`, { method: 'DELETE' });
-            msg($('globalMsg'), r.ok ? 'Deleted.' : (r.error || 'Delete failed.'), r.ok ? 'ok' : 'err');
-            if (r.ok) load();
-          });
-          act.append(edit, del);
-
-          tr.append(name, cat, status, price, monthly, qty, act);
-          tbody.appendChild(tr);
-        }
+      function setTab(name) {
+        document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('is-on', tab.dataset.tab === name));
+        document.querySelectorAll('.pane').forEach((pane) => pane.classList.toggle('is-on', pane.dataset.pane === name));
       }
 
-      /* ---------- form ---------- */
+      function openEditor() {
+        show($('editEmpty'), false);
+        show($('editor'), true);
+        $('panel').classList.add('is-editing');
+      }
+
+      function closeEditor() {
+        selectedSlug = '';
+        $('productForm').reset();
+        $('formTitle').textContent = 'New unit';
+        show($('deleteProduct'), false);
+        msg($('formMsg'), '', '');
+        renderGallery();
+        setTab('details');
+        show($('editor'), false);
+        show($('editEmpty'), true);
+        $('panel').classList.remove('is-editing');
+        renderList();
+      }
+
+      function startNew() {
+        selectedSlug = '';
+        $('productForm').reset();
+        $('quantity').value = '1';
+        $('sort_order').value = '0';
+        $('formTitle').textContent = 'New unit';
+        show($('deleteProduct'), false);
+        msg($('formMsg'), '', '');
+        renderGallery();
+        setTab('details');
+        openEditor();
+        renderList();
+        $('inventory_name').focus();
+      }
+
       function fill(p) {
-        $('formTitle').textContent = `Edit: ${p.inventory_name}`;
+        selectedSlug = p.slug || '';
+        $('formTitle').textContent = p.inventory_name || 'Edit unit';
         $('inventory_name').value = p.inventory_name || '';
         $('slug').value = p.slug || '';
         $('category').value = p.category || (categories[0] && categories[0].slug) || '';
@@ -378,6 +585,8 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
         $('monthly_payment').value = p.monthly_payment || '';
         $('sort_order').value = p.sort_order ?? 0;
         $('primary_image').value = p.primary_image || '';
+        $('gallery_images').value = (p.gallery_images || []).join('\n');
+        $('featured').checked = Boolean(Number(p.featured));
         $('promo_label').value = p.promo_label || '';
         $('delivery_promise').value = p.delivery_promise || '';
         $('quick_facts').value = (p.quick_facts || []).join('\n');
@@ -388,26 +597,186 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
         $('hero_description').value = p.hero_description || '';
         $('long_description').value = p.long_description || '';
         $('best_for').value = p.best_for || '';
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        show($('deleteProduct'), Boolean(p.slug));
+        renderGallery();
+        setTab('details');
+        msg($('formMsg'), '', '');
+        openEditor();
+        renderList();
       }
 
-      $('resetForm').addEventListener('click', () => {
-        $('productForm').reset();
-        $('formTitle').textContent = 'Add a product';
-        msg($('formMsg'), '', '');
-      });
+      function galleryUrls() {
+        return lines($('gallery_images').value);
+      }
 
-      $('imageFile').addEventListener('change', async () => {
-        const file = $('imageFile').files[0];
-        if (!file) return;
+      function renderGallery() {
+        const list = $('galleryList');
+        list.innerHTML = '';
+        for (const url of galleryUrls()) {
+          const item = document.createElement('div');
+          item.className = 'gallery-item';
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = '';
+          const remove = document.createElement('button');
+          remove.type = 'button';
+          remove.className = 'btn btn-danger btn-sm';
+          remove.textContent = 'Remove';
+          remove.addEventListener('click', () => {
+            $('gallery_images').value = galleryUrls().filter((item) => item !== url).join('\n');
+            renderGallery();
+          });
+          item.append(img, remove);
+          list.appendChild(item);
+        }
+      }
+
+      function renderList() {
+        const box = $('units');
+        const q = query.trim().toLowerCase();
+        const visible = products.filter((p) => {
+          if (!q) return true;
+          return [p.inventory_name, p.slug, p.category, p.status].join(' ').toLowerCase().includes(q);
+        });
+        $('unitCount').textContent = `${products.length} on the floor`;
+        box.innerHTML = '';
+        if (!visible.length) {
+          const empty = document.createElement('p');
+          empty.className = 'empty-list';
+          empty.textContent = products.length ? 'No units match that search.' : 'No units yet.';
+          box.appendChild(empty);
+          return;
+        }
+        for (const p of visible) {
+          const row = document.createElement('button');
+          row.type = 'button';
+          row.className = 'unit' + (p.slug === selectedSlug ? ' is-on' : '');
+          const photo = document.createElement('span');
+          photo.className = 'unit-photo';
+          photo.setAttribute('aria-hidden', 'true');
+          photo.style.cssText = 'width:48px;height:36px;min-width:48px;max-width:48px;overflow:hidden;background:#eef1f5 center/cover no-repeat';
+          if (p.primary_image) {
+            photo.style.backgroundImage = `url(${JSON.stringify(p.primary_image)})`;
+          }
+          const mid = document.createElement('div');
+          mid.className = 'unit-copy';
+          const name = Object.assign(document.createElement('div'), { className: 'unit-name', textContent: p.inventory_name });
+          const meta = Object.assign(document.createElement('div'), { className: 'unit-meta' });
+          meta.textContent = [STATUS_LABELS[p.status] || p.status, p.category, p.featured ? 'Featured' : '']
+            .filter(Boolean)
+            .join(' · ');
+          mid.append(name, meta);
+          const price = Object.assign(document.createElement('div'), {
+            className: 'unit-price',
+            textContent: p.price ? `$${Number(p.price).toLocaleString()}` : '',
+          });
+          row.append(photo, mid, price);
+          row.addEventListener('click', () => fill(p));
+          box.appendChild(row);
+        }
+      }
+
+      async function load() {
+        const { data } = await api('');
+        if (!data.ok) { msg($('globalMsg'), data.error || 'Could not load products.', 'err'); return; }
+        categories = data.categories || [];
+        products = data.products || [];
+        if (data.imagesConfigured === false) {
+          $('uploadHint').textContent = 'Uploads are off. Paste an https:// URL instead.';
+        }
+        const orphans = products.filter((p) => p.orphaned);
+        $('orphanNotice').textContent = orphans.length
+          ? `${orphans.length} unit${orphans.length === 1 ? '' : 's'} sit in a category this site no longer sells.`
+          : '';
+        show($('orphanNotice'), orphans.length > 0);
+        renderList();
+      }
+
+      async function uploadImage(file, onUrl) {
         msg($('formMsg'), 'Uploading…', 'ok');
         const fd = new FormData();
         fd.append('image', file);
         const { data } = await api('?action=upload', { method: 'POST', body: fd });
         if (!data.ok) { msg($('formMsg'), data.error || 'Upload failed.', 'err'); return; }
-        $('primary_image').value = data.url;
-        msg($('formMsg'), 'Uploaded. URL filled in below.', 'ok');
+        onUrl(data.url);
+        msg($('formMsg'), 'Uploaded.', 'ok');
+      }
+
+      function signedIn() {
+        show($('login'), false);
+        show($('panel'), true);
+        show($('logout'), true);
+      }
+
+      $('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        msg($('loginMsg'), '', '');
+        const { data } = await api('?action=login', {
+          method: 'POST',
+          body: JSON.stringify({ password: $('password').value }),
+        });
+        if (!data.ok) { msg($('loginMsg'), data.error || 'Sign in failed.', 'err'); return; }
+        setToken(data.token);
+        $('password').value = '';
+        signedIn();
+        load();
       });
+
+      $('logout').addEventListener('click', async () => {
+        await api('?action=logout', { method: 'POST' });
+        setToken('');
+        show($('login'), true);
+        show($('panel'), false);
+        show($('logout'), false);
+        closeEditor();
+      });
+
+      $('newProduct').addEventListener('click', startNew);
+      $('emptyAdd').addEventListener('click', startNew);
+      $('resetForm').addEventListener('click', closeEditor);
+      $('closeEditor').addEventListener('click', closeEditor);
+      $('unitSearch').addEventListener('input', () => {
+        query = $('unitSearch').value;
+        renderList();
+      });
+      document.querySelectorAll('.tab').forEach((tab) => {
+        tab.addEventListener('click', () => setTab(tab.dataset.tab));
+      });
+
+      $('deleteProduct').addEventListener('click', async () => {
+        const name = $('inventory_name').value || 'this unit';
+        if (!selectedSlug || !confirm(`Delete "${name}"? It is hidden, not erased.`)) return;
+        const { data } = await api(`?slug=${encodeURIComponent(selectedSlug)}`, { method: 'DELETE' });
+        msg($('globalMsg'), data.ok ? 'Deleted.' : (data.error || 'Delete failed.'), data.ok ? 'ok' : 'err');
+        if (data.ok) {
+          closeEditor();
+          load();
+        }
+      });
+
+      $('imageFile').addEventListener('change', async () => {
+        const file = $('imageFile').files[0];
+        if (!file) return;
+        await uploadImage(file, (url) => { $('primary_image').value = url; });
+        $('imageFile').value = '';
+      });
+
+      $('galleryFile').addEventListener('change', async () => {
+        const file = $('galleryFile').files[0];
+        if (!file) return;
+        if (galleryUrls().length >= 20) {
+          msg($('formMsg'), 'A product can have 20 gallery photos.', 'err');
+          $('galleryFile').value = '';
+          return;
+        }
+        await uploadImage(file, (url) => {
+          $('gallery_images').value = [...galleryUrls(), url].join('\n');
+          renderGallery();
+        });
+        $('galleryFile').value = '';
+      });
+
+      $('gallery_images').addEventListener('input', renderGallery);
 
       $('productForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -421,6 +790,8 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
           monthly_payment: $('monthly_payment').value,
           sort_order: $('sort_order').value,
           primary_image: $('primary_image').value,
+          gallery_images: galleryUrls(),
+          featured: $('featured').checked,
           promo_label: $('promo_label').value,
           delivery_promise: $('delivery_promise').value,
           quick_facts: lines($('quick_facts').value),
@@ -434,11 +805,22 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
         };
         const { data } = await api('', { method: 'POST', body: JSON.stringify(payload) });
         if (!data.ok) { msg($('formMsg'), data.error || 'Save failed.', 'err'); return; }
+        selectedSlug = data.product?.slug || payload.slug;
         msg($('formMsg'), 'Saved.', 'ok');
-        $('productForm').reset();
-        $('formTitle').textContent = 'Add a product';
-        load();
+        await load();
+        const next = products.find((p) => p.slug === selectedSlug);
+        if (next) fill(next);
       });
+
+      (async function boot() {
+        const { data } = await api('?action=status');
+        if (data && data.configured === false) {
+          msg($('loginMsg'), data.error || 'Inventory password is not set. Add it in Launchpad, then publish again.', 'err');
+        }
+        if (!token) return;
+        signedIn();
+        load();
+      })();
     </script>
   </body>
 </html>

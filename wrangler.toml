@@ -1,4 +1,4 @@
-name = "website-harbor-heat-15-preview"
+name = "website-harbor-heat-15"
 compatibility_date = "2026-08-01"
 compatibility_flags = ["nodejs_compat", "nodejs_als"]
 
@@ -7,8 +7,8 @@ enabled = true
 
 [[d1_databases]]
 binding = "DB"
-database_name = "website-harbor-heat-15-preview-inventory"
-database_id = "4ac51d4b-2d9e-4f6c-96d0-59ed4f74238e"
+database_name = "website-harbor-heat-15-inventory"
+database_id = "6dcc9bf0-d206-4f03-916e-bc3e659a68d2"
 
 [[r2_buckets]]
 binding = "PRODUCT_IMAGES"
@@ -16,4 +16,4 @@ bucket_name = "website-harbor-heat-15-images"
 
 [[kv_namespaces]]
 binding = "SESSION"
-id = "2fb321aeb0ac47d9b9279be9c6559f36"
+id = "9a73f3c56d9d42b7b05c10a530264882"
